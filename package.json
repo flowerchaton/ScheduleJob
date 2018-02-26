@@ -1,11 +1,11 @@
 {
-  "name": "schedulejob",
+  "name": "schedule-job",
   "version": "1.0.0",
   "description": "A javascript library for managing schedule job",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "test": "echo \"Error: no test specified\" && exit 1"
+
   },
   "repository": {
     "type": "git",
