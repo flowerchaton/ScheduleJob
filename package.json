@@ -1,11 +1,10 @@
 {
   "name": "schedule-job",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A javascript library for managing schedule job",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-
+    "build": "babel src --out-file index.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +18,10 @@
   "bugs": {
     "url": "https://github.com/flowerchaton/ScheduleJob/issues"
   },
-  "homepage": "https://github.com/flowerchaton/ScheduleJob#readme"
-  
+  "homepage": "https://github.com/flowerchaton/ScheduleJob#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.4",
+    "@babel/preset-env": "^7.4.4"
+  }
 }
