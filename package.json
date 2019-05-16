@@ -4,7 +4,7 @@
   "description": "A javascript library for managing schedule job",
   "main": "index.js",
   "scripts": {
-    "build": "babel src --out-file index.js"
+    "build": "babel src/schedule-job.js --out-file index.js"
   },
   "repository": {
     "type": "git",
