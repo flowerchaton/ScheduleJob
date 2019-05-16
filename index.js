@@ -194,7 +194,7 @@ function () {
       };
     }
   }, {
-    key: "lastExec",
+    key: "prevExec",
     get: function get() {
       return this._execRecords[this._execRecords.length - 2];
     }

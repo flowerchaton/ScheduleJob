@@ -156,7 +156,7 @@ module.exports = class ScheduleJob {
         return { date: nextExecDate }
     }
 
-    get lastExec() {
+    get prevExec() {
         return this._execRecords[this._execRecords.length - 2]
     }
 

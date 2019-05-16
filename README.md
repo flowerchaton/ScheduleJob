@@ -27,39 +27,53 @@ let job = new ScheduleJob({ date: someDate, repeat: true}, callback)
 
 ##  API
 
-### start a job
+### Start a job
 ``` 
 job.start()
 ```
 
-### stop a job
+### Stop a job
 ```
 job.terminate()
 ```
 
-
-### get next execution time
+## Useful info
+### Get next execution record
 ```
-job.nextExec()
-```
-
-### get last execution time
-```
-job.nextExec()
+job.nextExec // { start: 2019-05-16T15:49:56.906Z, timeSpan: 3013, success: true }
 ```
 
-### get current execution time
+### Get previous execution record
 ```
-job.currentExec()
+job.prevExec // { start: 2019-05-16T15:60:56.906Z, timeSpan: 3013, success: true }
 ```
 
-##  Props
+### Get current execution record
+```
+job.currentExec // { start: 2019-05-16T15:49:56.906Z, timeSpan: 3013, success: true }
+```
+
+### Get history
+```
+job.history // 
+[
+    { start: 2019-05-16T15:42:56.906Z, timeSpan: 3013, success: true }, 
+    { start: 2019-05-16T15:49:56.906Z, timeSpan: 3013, success: false, error: ... }
+]
+```
+##  Props list
+### Job {
+
 - id 
 - type
 - actived
-- jobTypes
+- jobTypes [static]
   - ONE_TIME: 0
   - REPEAT: 1
   - REPEAT_AT_TIME: 2
+- history
+- nextExec
+- currentExec
+- prevExec
 
-- interval
+}
