@@ -9,7 +9,7 @@ let job = new ScheduleJob({ interval: 1000 }, callback)
 
 ### create repeat job
 ```
-let job = new ScheduleJob({ interval: 1000, repeat: true })
+let job = new ScheduleJob({ interval: 1000, repeat: true }, callback)
 ```
 
 ### create one time job on specific date
@@ -22,7 +22,7 @@ let job = new ScheduleJob({ date: someDate })
 ### create repeat job on specific date
 ```
 let someDate = new Date('2018-2-26 10:10:10')
-let job = new ScheduleJob({ date: someDate, repeat: true})
+let job = new ScheduleJob({ date: someDate, repeat: true}, callback)
 ```
 
 ##  API
@@ -58,4 +58,8 @@ job.currentExec()
 - type
 - actived
 - jobTypes
+  - ONE_TIME: 0
+  - REPEAT: 1
+  - REPEAT_AT_TIME: 2
+
 - interval
