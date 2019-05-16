@@ -14,11 +14,14 @@ function () {
 
     this._repeat = options.repeat || false;
     this._interval = options.interval;
+    this._keepHistory = options.keepHistory || false;
+    this._historyBufferLength = options.historyBufferLength || 200;
+    this._historyDisplayLength = options.historyDisplayLength || 200;
     this._date = options.date;
     this._callback = callback;
     this._id = undefined;
     this._actived = false;
-    this._execDateRecords = [];
+    this._execRecords = [];
 
     if (this._repeat) {
       if (this._date && this._interval) {
@@ -32,16 +35,76 @@ function () {
   }
 
   _createClass(ScheduleJob, [{
+    key: "_updateRecord",
+    value: function _updateRecord() {
+      var record = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var action = arguments.length > 1 ? arguments[1] : undefined;
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      switch (action) {
+        case 'start':
+          {
+            record.start = new Date();
+            break;
+          }
+
+        case 'end':
+          {
+            var startTime = record.start.getTime();
+            record.timeSpan = Date.now() - startTime;
+
+            if (options.error) {
+              record.success = false;
+              record.error = options.error;
+            } else {
+              record.success = true;
+            }
+
+            break;
+          }
+
+        default:
+          break;
+      }
+    }
+  }, {
+    key: "_addRecord",
+    value: function _addRecord(record) {
+      while (this.__execRecords.length >= this._historyBufferLength) {
+        this._execRecords.shift();
+      }
+
+      this._execRecords.push(record);
+    }
+  }, {
     key: "start",
     value: function start() {
       var _this = this;
 
       var callbackWrapper = function callbackWrapper() {
-        _this._callback();
+        var record = {};
 
-        var now = new Date();
+        _this._updateRecord(record, 'start');
 
-        _this._execDateRecords.push(now);
+        try {
+          var returnValue = _this._callback();
+
+          if (returnValue instanceof Promise) {
+            returnValue.then(function () {
+              return _this._updateRecord(record, 'end');
+            })["catch"](function (e) {
+              return _this._updateRecord(record, 'end', {
+                error: e
+              });
+            });
+          }
+        } catch (error) {
+          _this._updateRecord(record, 'end', {
+            error: error
+          });
+        }
+
+        _this._addRecord(record);
       };
 
       this._actived = true;
@@ -99,11 +162,6 @@ function () {
       return this._id;
     }
   }, {
-    key: "type",
-    get: function get() {
-      return this._type;
-    }
-  }, {
     key: "actived",
     get: function get() {
       return this._actived;
@@ -118,27 +176,29 @@ function () {
       };
     }
   }, {
-    key: "interval",
+    key: "history",
     get: function get() {
-      return this._interval;
+      return this._execRecords();
     }
   }, {
     key: "nextExec",
     get: function get() {
-      var len = this._execDateRecords.length;
-      var lastExecDate = this._execDateRecords[len - 1];
+      var len = this._execRecords.length;
+      var lastExecDate = this._execRecords[len - 1];
       var nextExecDate = new Date(lastExecDate.getTime() + this._interval);
-      return nextExecDate;
+      return {
+        date: nextExecDate
+      };
     }
   }, {
     key: "lastExec",
     get: function get() {
-      return this._execDateRecords[this._execDateRecords.length - 2];
+      return this._execRecords[this._execRecords.length - 2];
     }
   }, {
     key: "currentExec",
     get: function get() {
-      return this._execDateRecords[this._execDateRecords.length - 1];
+      return this._execRecords[this._execRecords.length - 1];
     }
   }]);
 
