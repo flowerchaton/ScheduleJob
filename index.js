@@ -14,11 +14,15 @@ function () {
 
     this._repeat = options.repeat || false;
     this._interval = options.interval;
+    this._keepHistory = options.keepHistory || false;
+    this._historyBufferLength = options.historyBufferLength || 200;
+    this._historyDisplayLength = options.historyDisplayLength || 200;
     this._date = options.date;
     this._callback = callback;
-    this._id = undefined;
+    this._ref = undefined;
+    this._id = Date.now();
     this._actived = false;
-    this._execDateRecords = [];
+    this._execRecords = [];
 
     if (this._repeat) {
       if (this._date && this._interval) {
@@ -32,16 +36,78 @@ function () {
   }
 
   _createClass(ScheduleJob, [{
+    key: "_updateRecord",
+    value: function _updateRecord() {
+      var record = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var action = arguments.length > 1 ? arguments[1] : undefined;
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      switch (action) {
+        case 'start':
+          {
+            record.start = new Date();
+            break;
+          }
+
+        case 'end':
+          {
+            var startTime = record.start.getTime();
+            record.timeSpan = Date.now() - startTime;
+
+            if (options.error) {
+              record.success = false;
+              record.error = options.error;
+            } else {
+              record.success = true;
+            }
+
+            break;
+          }
+
+        default:
+          break;
+      }
+    }
+  }, {
+    key: "_addRecord",
+    value: function _addRecord(record) {
+      while (this._execRecords.length >= this._historyBufferLength) {
+        this._execRecords.shift();
+      }
+
+      this._execRecords.push(record);
+    }
+  }, {
     key: "start",
     value: function start() {
       var _this = this;
 
       var callbackWrapper = function callbackWrapper() {
-        _this._callback();
+        var record = {};
 
-        var now = new Date();
+        _this._addRecord(record);
 
-        _this._execDateRecords.push(now);
+        _this._updateRecord(record, 'start');
+
+        try {
+          var returnValue = _this._callback();
+
+          if (returnValue instanceof Promise) {
+            returnValue.then(function () {
+              _this._updateRecord(record, 'end');
+            })["catch"](function (e) {
+              _this._updateRecord(record, 'end', {
+                error: e
+              });
+            });
+          } else {
+            _this._updateRecord(record, 'end');
+          }
+        } catch (error) {
+          _this._updateRecord(record, 'end', {
+            error: error
+          });
+        }
       };
 
       this._actived = true;
@@ -55,12 +121,12 @@ function () {
           return;
         } else {
           setTimeout(function () {
-            _this._id = setInterval(callbackWrapper, _this._interval);
+            _this._ref = setInterval(callbackWrapper, _this._interval);
             callbackWrapper();
           }, delay);
         }
       } else if (this._type == this.jobTypes.REPEAT) {
-        this._id = setInterval(callbackWrapper, this._interval);
+        this._ref = setInterval(callbackWrapper, this._interval);
         callbackWrapper();
       } else if (this._type == this.jobTypes.ONE_TIME) {
         if (this._date && this._interval) {
@@ -71,9 +137,9 @@ function () {
 
             var interval = this._date.getTime() - _now.getTime();
 
-            this._id = setTimeout(callbackWrapper, interval);
+            this._ref = setTimeout(callbackWrapper, interval);
           } else if (this._interval) {
-            this._id = setTimeout(callbackWrapper, this._interval);
+            this._ref = setTimeout(callbackWrapper, this._interval);
           }
         }
       }
@@ -82,13 +148,13 @@ function () {
     key: "terminate",
     value: function terminate() {
       if (this._type == this.jobTypes.ONE_TIME) {
-        if (this._actived && this._id) {
-          clearTimeout(this._id);
+        if (this._actived && this._ref) {
+          clearTimeout(this._ref);
           this._actived = false;
         }
       } else if (this._type == this.jobTypes.REPEAT || this.jobTypes.REPEAT_AT_TIME) {
-        if (this._actived && this._id) {
-          clearInterval(this._id);
+        if (this._actived && this._ref) {
+          clearInterval(this._ref);
           this._actived = false;
         }
       }
@@ -96,12 +162,7 @@ function () {
   }, {
     key: "id",
     get: function get() {
-      return this._id;
-    }
-  }, {
-    key: "type",
-    get: function get() {
-      return this._type;
+      return this._ref;
     }
   }, {
     key: "actived",
@@ -118,27 +179,29 @@ function () {
       };
     }
   }, {
-    key: "interval",
+    key: "history",
     get: function get() {
-      return this._interval;
+      return this._execRecords;
     }
   }, {
     key: "nextExec",
     get: function get() {
-      var len = this._execDateRecords.length;
-      var lastExecDate = this._execDateRecords[len - 1];
-      var nextExecDate = new Date(lastExecDate.getTime() + this._interval);
-      return nextExecDate;
+      var len = this._execRecords.length;
+      var lastExec = this._execRecords[len - 1];
+      var nextExecDate = new Date(lastExec.start.getTime() + this._interval);
+      return {
+        date: nextExecDate
+      };
     }
   }, {
-    key: "lastExec",
+    key: "prevExec",
     get: function get() {
-      return this._execDateRecords[this._execDateRecords.length - 2];
+      return this._execRecords[this._execRecords.length - 2];
     }
   }, {
     key: "currentExec",
     get: function get() {
-      return this._execDateRecords[this._execDateRecords.length - 1];
+      return this._execRecords[this._execRecords.length - 1];
     }
   }]);
 
