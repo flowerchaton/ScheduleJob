@@ -2,11 +2,14 @@ module.exports = class ScheduleJob {
     constructor(options, callback) {
         this._repeat = options.repeat || false
         this._interval = options.interval
+        this._keepHistory = options.keepHistory || false
+        this._historyBufferLength = options.historyBufferLength || 200
+        this._historyDisplayLength = options.historyDisplayLength || 200
         this._date = options.date
         this._callback = callback
         this._id = undefined
         this._actived = false
-        this._execDateRecords = []
+        this._execRecords = []
 
         if (this._repeat) {
             if (this._date && this._interval) {
@@ -24,10 +27,6 @@ module.exports = class ScheduleJob {
         return this._id
     }
 
-    get type() {
-        return this._type
-    }
-
     get actived() {
         return this._actived
     }
@@ -39,16 +38,50 @@ module.exports = class ScheduleJob {
             REPEAT_AT_TIME: 2
         }
     }
-    get interval() {
-        return this._interval
+
+    get history() {
+        return this._execRecords()
     }
 
-    start() {
+    _updateRecord(record = {}, action, options = {}) {
+        switch (action) {
+            case 'start': {
+                record.start = new Date()
+                break
+            }
+            case 'end': {
+                let startTime = record.start.getTime()
+                record.timeSpan = Date.now() - startTime
+                if (options.error) {
+                    record.success = false
+                    record.error = options.error
+                } else {
+                    record.success = true
+                }
+                break
+            }
+            default:
+                break
+        }
+    }
 
+    _set
+
+    start() {
         const callbackWrapper = () => {
-            this._callback()
-            let now = new Date()
-            this._execDateRecords.push(now)
+            const record = {}
+            this._updateRecord(record, 'start')
+            try {
+                const returnValue = this._callback()
+                if (returnValue instanceof Promise) {
+                    returnValue
+                        .then(() => this._updateRecord(record, 'end'))
+                        .catch((e) => this._updateRecord(record, 'end', { error: e }))
+                }
+            } catch (error) {
+                this._updateRecord(record, 'end', { error })
+            }
+            this._execRecords.push(record)
         }
 
         this._actived = true
@@ -105,18 +138,18 @@ module.exports = class ScheduleJob {
     }
 
     get nextExec() {
-        let len = this._execDateRecords.length
-        let lastExecDate = this._execDateRecords[len - 1]
+        let len = this._execRecords.length
+        let lastExecDate = this._execRecords[len - 1]
         let nextExecDate = new Date(lastExecDate.getTime() + this._interval)
-        return nextExecDate
+        return { date: nextExecDate }
     }
 
     get lastExec() {
-        return this._execDateRecords[this._execDateRecords.length - 2]
+        return this._execRecords[this._execRecords.length - 2]
     }
 
     get currentExec() {
-        return this._execDateRecords[this._execDateRecords.length - 1]
+        return this._execRecords[this._execRecords.length - 1]
     }
 
 }
