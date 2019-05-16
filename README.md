@@ -15,7 +15,7 @@ let job = new ScheduleJob({ interval: 1000, repeat: true }, callback)
 ### create one time job on specific date
 ```
 let someDate = new Date('2018-2-26 10:10:10')
-let job = new ScheduleJob({ date: someDate })
+let job = new ScheduleJob({ date: someDate }, callback)
 ```
 
 
